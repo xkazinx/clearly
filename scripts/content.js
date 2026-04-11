@@ -35,13 +35,21 @@ if(Is("instagram.com"))
         
         const elem = document.querySelectorAll('.x1iyjqo2.xh8yej3');
         console.log(elem);
-        elem[0].children[0].style.visibility = 'hidden'; 
-        elem[0].children[2].style.visibility = 'hidden'; 
-        elem[0].children[3].style.visibility = 'hidden'; 
-        elem[0].children[6].style.visibility = 'hidden'; 
-        elem[0].children[7].style.visibility = 'hidden'; 
+        elem[1].children[0].style.visibility = 'hidden'; 
+        elem[1].children[1].style.visibility = 'hidden'; 
+        elem[1].children[4].style.visibility = 'hidden'; 
+        elem[1].children[6].style.visibility = 'hidden'; 
+        elem[1].children[7].style.visibility = 'hidden'; 
         
         document.querySelector('.x1dr59a3.x13vifvy.x7vhb2i.x6bx242').style.visibility = 'hidden';   
+
+        
+
+        stylesheet.insertRule(".html-div.xdj266r.x14z9mp.xat24cr.x1lziwak.xexx8yu.xyri2b.x18d9i69.x1c1uobl.x9f619.xjbqb8w.x78zum5.x15mokao.x1ga7v0g.x16uus16.xbiv7yw.x1plvlek.xryxfnj.x1c4vz4f.x2lah0s.xdt5ytf.xqjyukv.x1qjc9v5.x1oa3qoh.x1nhvcw1.x3h4tne.x145d82y.xixxii4 { display: none; }", 0);
+        
+        stylesheet.insertRule(".x78zum5.xdt5ytf.x5yr21d.xa1mljc.xh8yej3.x1bs97v6.x1q0q8m5.x11aubdm.xnc8uc2.x1qhh985 { margin-top: 100vh !important; }", 0);
+        
+        
     }, 500);
 
     // hide
