@@ -143,8 +143,8 @@ else if(Is("facebook.com", false) || Is("facebook.com", true))
             .style.visibility = 'hidden';
 
         // Stories
-        document.querySelector('.xb57i2i.x1q594ok.x5lxg6s.x78zum5.xdt5ytf.x10wlt62.x1n2onr6.x1ja2u2z.x1pq812k.xfk6m8.x1yqm8si.xjx87ck.xw2csxc.x7p5m3t.x9f619.xat24cr.xwib8y2.x1y1aw1k.x1rohswg.xhfbhpw')
-            .style.visibility = 'hidden';
+        //document.querySelector('.xb57i2i.x1q594ok.x5lxg6s.x78zum5.xdt5ytf.x10wlt62.x1n2onr6.x1ja2u2z.x1pq812k.xfk6m8.x1yqm8si.xjx87ck.xw2csxc.x7p5m3t.x9f619.xat24cr.xwib8y2.x1y1aw1k.x1rohswg.xhfbhpw')
+          //  .style.visibility = 'hidden';
 
         // Add blank space between posts 
         {
@@ -174,7 +174,7 @@ else if(Is("facebook.com", false) || Is("facebook.com", true))
             const style = document.createElement('style');
             style.type = 'text/css';
 
-            const cssRule = `.xb57i2i.x1q594ok.x5lxg6s.x78zum5.xdt5ytf.x10wlt62.x1n2onr6.x1ja2u2z.x1pq812k.xfk6m8.x1yqm8si.xjx87ck.xw2csxc.x7p5m3t.x9f619.xat24cr.xwib8y2.x1y1aw1k.x1rohswg.xhfbhpw {
+            const cssRule = `.x9f619.x1n2onr6.x1ja2u2z.x1wsgfga.x9otpla.xwib8y2.x1y1aw1k {
                 visibility: hidden !important;
             }`;
 
