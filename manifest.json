@@ -13,7 +13,12 @@
       "matches": [
         "https://www.instagram.com/*",
         "https://www.instagram.com/direct/inbox/*",
-        "https://web.whatsapp.com/*"
+        "https://web.whatsapp.com/*",
+        "https://www.youtube.com/*",
+        "https://www.facebook.com/*",
+        "https://discord.com/*",
+        "https://linkedin.com/*",
+        "https://www.linkedin.com/*"
       ]
     }
   ]
