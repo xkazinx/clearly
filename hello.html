@@ -1,6 +1,24 @@
 <html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      body { font-family: system-ui, sans-serif; width: 380px; margin: 12px; }
+      h1 { font-size: 16px; }
+      button { cursor: pointer; }
+      #scan { width: 100%; padding: 8px; font-size: 14px; }
+      #status { margin: 8px 0; font-size: 12px; color: #555; }
+      .video { border: 1px solid #ddd; border-radius: 6px; padding: 6px; margin-bottom: 6px; font-size: 12px; }
+      .video .label { font-weight: bold; word-break: break-all; }
+      .video .url { color: #777; word-break: break-all; max-height: 3em; overflow: hidden; }
+      .video .actions { margin-top: 4px; display: flex; gap: 4px; }
+    </style>
+  </head>
   <body>
     <h1>Cuidate a vos mismo mi bro...</h1>
+    <button id="scan">Download videos &amp; audio</button>
+    <div id="status"></div>
+    <button id="downloadAll" hidden>Download all</button>
+    <div id="results"></div>
     <script src="popup.js"></script>
   </body>
 </html>

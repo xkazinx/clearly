@@ -1,3 +1,6 @@
+// true: don't change anything on discord.com
+const disableDiscord = true;
+
 function Is(url, www = true)
 {
     let wurl = window.location.href;
@@ -28,6 +31,21 @@ function Is(url, www = true)
 if(Is("instagram.com"))
 {
     console.log("instagram.com loaded");
+
+    // Button on the left that opens the home feed with only accounts we follow
+    {
+        const followingButton = document.createElement("button");
+        followingButton.textContent = "Following";
+        followingButton.style.cssText = "position: fixed; left: 10px; top: 50%; transform: translateY(-50%); z-index: 2147483647;" +
+            " padding: 8px 12px; border: none; border-radius: 8px; background: #0095f6; color: white; font-weight: bold; cursor: pointer;";
+        followingButton.addEventListener("click", () => window.location.href = "https://www.instagram.com/?variant=following");
+
+        // document.body may not exist yet depending on when the script runs
+        if(document.body)
+            document.body.appendChild(followingButton);
+        else
+            document.addEventListener("DOMContentLoaded", () => document.body.appendChild(followingButton));
+    }
     
     stylesheet = document.styleSheets[0];
     setTimeout(function(){
@@ -35,13 +53,17 @@ if(Is("instagram.com"))
         
         const elem = document.querySelectorAll('.x1iyjqo2.xh8yej3');
         console.log(elem);
-        elem[1].children[0].style.visibility = 'hidden'; 
-        elem[1].children[1].style.visibility = 'hidden'; 
-        elem[1].children[4].style.visibility = 'hidden'; 
-        elem[1].children[6].style.visibility = 'hidden'; 
-        elem[1].children[7].style.visibility = 'hidden'; 
-        
-        document.querySelector('.x1dr59a3.x13vifvy.x7vhb2i.x6bx242').style.visibility = 'hidden';   
+        // These elements don't exist on every page (profile, followers list...), so check before using them
+        [0, 1, 4, 6, 7].forEach(i =>
+        {
+            const child = elem[1]?.children[i];
+            if(child)
+                child.style.visibility = 'hidden';
+        });
+
+        const sideElem = document.querySelector('.x1dr59a3.x13vifvy.x7vhb2i.x6bx242');
+        if(sideElem)
+            sideElem.style.visibility = 'hidden';
 
         
         // right panel
@@ -53,10 +75,182 @@ if(Is("instagram.com"))
         
     }, 500);
 
+    // Hide suggested posts (only show posts from accounts we follow)
+    {
+        const suggestedTexts = ["Sugerencia para ti", "Sugerencias para ti", "Seguir", "Suggested for you", "Follow"];
+
+        // true: log why each post was covered (to check nothing wrong gets covered)
+        const debugSuggested = false;
+
+        // Main media of the post (skip small images like the profile picture), or null if not loaded yet
+        function PostMedia(article)
+        {
+            return Array.from(article.querySelectorAll('video, img'))
+                .find(m => m.tagName === 'VIDEO' || m.getBoundingClientRect().width > 200) || null;
+        }
+
+        // true if el is above the photo / video (header), not in the caption or comments
+        function InHeader(el, media)
+        {
+            return el.compareDocumentPosition(media) & Node.DOCUMENT_POSITION_FOLLOWING;
+        }
+
+        // Returns the element that marks the post as suggested, or null
+        function SuggestedMark(article, media)
+        {
+            return Array.from(article.querySelectorAll('span, div, button')).find(el =>
+                el.children.length === 0 && suggestedTexts.includes(el.textContent.trim()) && InHeader(el, media)
+            ) || null;
+        }
+
+        // Usernames of the post authors (more than one on collab posts), taken from the profile links in the header
+        function PostAuthors(article, media)
+        {
+            const authors = new Set();
+            article.querySelectorAll('a[href]').forEach(a =>
+            {
+                const match = a.getAttribute('href').match(/^\/([A-Za-z0-9._]+)\/$/);
+                if(match && InHeader(a, media))
+                    authors.add(match[1]);
+            });
+            return Array.from(authors);
+        }
+
+        // Asks Instagram if we follow the user (same request the hover card uses). Cached so each user is only asked once
+        // Resolves to true / false, or null if we couldn't tell (rate limited, network error...)
+        const followingCache = new Map();
+        const myUserId = (document.cookie.match(/(?:^|; )ds_user_id=(\d+)/) || [])[1];
+        // When Instagram rate limits us, don't ask again until this time
+        let retryAt = 0;
+        function IsFollowing(username)
+        {
+            if(!followingCache.has(username))
+            {
+                followingCache.set(username, fetch("/api/v1/users/web_profile_info/?username=" + encodeURIComponent(username),
+                    { headers: { "X-IG-App-ID": "936619743392459" }, credentials: "include" })
+                    .then(response =>
+                    {
+                        if(!response.ok)
+                            throw new Error("HTTP " + response.status);
+                        return response.json();
+                    })
+                    .then(json => json.data.user.followed_by_viewer || json.data.user.id === myUserId)
+                    .catch(error =>
+                    {
+                        // Unknown: the post is checked again later instead of being treated as following
+                        console.log("Couldn't check if we follow " + username + ", retrying later:", error);
+                        followingCache.delete(username);
+                        retryAt = Date.now() + 30000;
+                        return null;
+                    }));
+            }
+            return followingCache.get(username);
+        }
+
+        // Yellow div on top of the post, clicking it removes it so the post can be seen
+        function CoverPost(article)
+        {
+            const cover = document.createElement("div");
+            cover.className = "clearly-suggested-cover";
+            cover.textContent = article.dataset.suggestedLabel + " (click to show)";
+            cover.style.cssText = "position: absolute; inset: 0; z-index: 2147483646; background: yellow; color: black;" +
+                " display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer;";
+            cover.addEventListener("click", e =>
+            {
+                e.preventDefault();
+                e.stopPropagation();
+                article.dataset.suggested = "shown";
+                cover.remove();
+            });
+
+            if(getComputedStyle(article).position === "static")
+                article.style.position = "relative";
+            article.appendChild(cover);
+        }
+
+        function MarkCovered(article, label)
+        {
+            article.dataset.suggestedLabel = label;
+            article.dataset.suggested = "covered";
+        }
+
+        setInterval(function()
+        {
+            // Instagram can reuse an article element for a different post while scrolling, so check it again when the authors change
+            document.querySelectorAll('article[data-suggested]').forEach(article =>
+            {
+                const media = PostMedia(article);
+                if(!media || article.dataset.suggestedAuthors === undefined)
+                    return;
+                if(PostAuthors(article, media).join(",") !== article.dataset.suggestedAuthors)
+                {
+                    delete article.dataset.suggested;
+                    article.querySelector(':scope > .clearly-suggested-cover')?.remove();
+                }
+            });
+
+            document.querySelectorAll('article:not([data-suggested])').forEach(article =>
+            {
+                // Media not loaded yet, can't tell header from comments. Checked again on the next tick
+                const media = PostMedia(article);
+                if(!media)
+                    return;
+
+                const authors = PostAuthors(article, media);
+                article.dataset.suggestedAuthors = authors.join(",");
+
+                const mark = SuggestedMark(article, media);
+                if(mark)
+                {
+                    MarkCovered(article, "Suggested post");
+                    if(debugSuggested)
+                        console.log("Suggested post (matched '" + mark.textContent.trim() + "'):", article);
+                    return;
+                }
+
+                // Posts from people we don't follow that don't say "Follow" anywhere
+                if(authors.length === 0 || Date.now() < retryAt)
+                    return;
+
+                article.dataset.suggested = "checking";
+                Promise.all(authors.map(IsFollowing)).then(following =>
+                {
+                    // The article was reused for another post while we were asking
+                    if(article.dataset.suggested !== "checking" || article.dataset.suggestedAuthors !== authors.join(","))
+                        return;
+
+                    if(following.some(f => f))
+                    {
+                        article.dataset.suggested = "following";
+                        return;
+                    }
+
+                    // Couldn't tell for any author: check the post again on a later tick
+                    if(following.some(f => f === null))
+                    {
+                        delete article.dataset.suggested;
+                        return;
+                    }
+
+                    MarkCovered(article, "Not following @" + authors.join(", @"));
+                    if(debugSuggested)
+                        console.log("Post from people we don't follow (" + authors.join(", ") + "):", article);
+                });
+            });
+
+            // Instagram re-renders posts and can remove the cover, so put it back until it's clicked
+            document.querySelectorAll('article[data-suggested="covered"]').forEach(article =>
+            {
+                if(!article.querySelector(':scope > .clearly-suggested-cover'))
+                    CoverPost(article);
+            });
+        }, 500);
+    }
+
     // hide
     //html-div xdj266r x14z9mp xat24cr x1lziwak xexx8yu xyri2b x18d9i69 x1c1uobl x9f619 xjbqb8w x78zum5 x15mokao x1ga7v0g x16uus16 xbiv7yw x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1 x3h4tne x145d82y xixxii4
 }
-else if(Is("discord.com", false))
+else if(!disableDiscord && Is("discord.com", false))
 {
     let once = true;
     setInterval(function()
@@ -124,6 +318,71 @@ else if(Is("discord.com", false))
 }
 else if(Is("facebook.com", false) || Is("facebook.com", true))
 {
+    // Ads: covered with a white div, clicking it removes it so the post can be seen
+    {
+        const adLabels = ["Ad", "Sponsored"];
+
+        function IsAd(post)
+        {
+            if(post.querySelector('a[href*="/ads/about"], a[aria-label="Ad"], a[aria-label="Sponsored"]'))
+                return true;
+
+            // Facebook hides extra letters in the label, so compare the visible text only
+            for(const el of post.querySelectorAll('a[role="link"], span'))
+            {
+                if(el.textContent.length > 60)
+                    continue;
+                if(adLabels.includes(el.innerText.trim()))
+                    return true;
+            }
+            return false;
+        }
+
+        function CoverAd(post)
+        {
+            const cover = document.createElement("div");
+            cover.className = "clearly-ad-cover";
+            cover.textContent = "Ad (click to show)";
+            cover.style.cssText = "position: absolute; inset: 0; z-index: 10; background: white; color: black;" +
+                " display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer;";
+            cover.addEventListener("click", e =>
+            {
+                e.preventDefault();
+                e.stopPropagation();
+                post.dataset.clearlyAd = "shown";
+                cover.remove();
+            });
+
+            if(getComputedStyle(post).position === "static")
+                post.style.position = "relative";
+            post.appendChild(cover);
+        }
+
+        setInterval(function()
+        {
+            document.querySelectorAll('[aria-posinset], [data-pagelet^="FeedUnit"]').forEach(post =>
+            {
+                if(post.dataset.clearlyAd === "shown")
+                    return;
+                // Only the outermost post container gets a cover
+                if(post.parentElement?.closest('[aria-posinset], [data-pagelet^="FeedUnit"]'))
+                    return;
+                // Facebook can re-render the post and drop the cover
+                if(post.dataset.clearlyAd === "covered")
+                {
+                    if(!post.querySelector(':scope > .clearly-ad-cover'))
+                        CoverAd(post);
+                    return;
+                }
+                if(IsAd(post))
+                {
+                    post.dataset.clearlyAd = "covered";
+                    CoverAd(post);
+                }
+            });
+        }, 10);
+    }
+
     setInterval(function()
     {
         // Right panel

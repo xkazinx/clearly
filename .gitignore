@@ -1,0 +1,4 @@
+.vs/
+# Personal exports and saved test pages
+*.txt
+example_download.html
